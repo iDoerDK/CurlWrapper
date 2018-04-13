@@ -1,12 +1,31 @@
-/* 
- * File:   curlwrapper.c
- * Author: jarnt
- *
- * Created on February 13, 2018, 8:48 PM
+/**
+ * @file
+ * @author  Jens Arnt <jens@idoer.dk>, iDoer Aps
+ * @version 1.3
+ * 
+ * @section HISTORY
+ *  Created on February 13, 2018, 8:48 PM
  * Version 1.0 February 13, 2018
  * Version 1.1 March 20, 2018
  * Version 1.2 March 22, 2018
  * Version 1.3 April 6th 2018
+ * 
+ * @section LICENSE
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the Apache 2.0 Licence as
+ * published by the Apache Software Foundation
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
+ * Apache License for more details at
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * @section DESCRIPTION
+ *
+ * Yada yada yada
+ * 
  */
 
 #include <stdio.h>
@@ -14,12 +33,6 @@
 #include <string.h>
 #include <curl/curl.h>
 #include "curlwrapper.h"
-
-struct xMemory 
-{
-    char * memory;
-    size_t size;
-};
 
 
 struct NotesCurlHandlestruct {
@@ -30,20 +43,6 @@ struct NotesCurlHandlestruct {
     size_t return_buffer_size;
     unsigned int active; // 0 for inactive, 1 for active, both curlhandle and return buffer must have a valid addres if active == 1
 } ;
-
-void * xxnotes_malloc(struct NotesCurlHandlestruct *localHandleStruct, unsigned long newsize)
-{
-    localHandleStruct->return_buffer = malloc(newsize);
-    localHandleStruct->return_buffer_size = newsize;
-    return localHandleStruct->return_buffer;
-}
-
-void * xxnotes_realloc(struct NotesCurlHandlestruct *localHandleStruct, unsigned long newsize)
-{
-    localHandleStruct->return_buffer = realloc(localHandleStruct, newsize);
-    localHandleStruct->return_buffer_size = newsize;
-    return localHandleStruct->return_buffer;
-}
 
 
 
@@ -217,7 +216,8 @@ static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, voi
   memcpy(&mem->return_buffer[mem->return_buffer_size], contents, realsize);
   mem->return_buffer_size += realsize;
   mem->return_buffer[mem->return_buffer_size] = 0; 
-  //printf("realsize=%zd",mem->return_buffer_size);
+  //printf("realsize=%zd\n",mem->return_buffer_size);
+  //printf("Buffer=%s\n",mem->return_buffer);
    return realsize;
 }
 
@@ -255,17 +255,12 @@ void PrintChunk( struct NotesCurlHandlestruct *content)
             rc_buffer = globalNotesCurlHandleList.NotesCurlHandles[notes_curl_handle].return_buffer;
         }
      }
+     //printf("rc_buffer:%s\n",rc_buffer);
      return rc_buffer;
  }
-
+/*
  int main(int argc, char *argv[])
 {
-/*
-  if(argc < 2) {
-    printf("Usage: %s <URL>\n", argv[0]);
-    return 1;
-  }
-*/
 	//char * url = "www.google.com";
 	char * url = argv[1];
 	char * payload;
@@ -280,9 +275,9 @@ void PrintChunk( struct NotesCurlHandlestruct *content)
         	nch2 = notes_curl_easy_init();
             //PrintNotesCurlStruct("easy_perform1");
             nativeCURLhandle = notes_get_native_curl_handle(nch1);
-            curl_easy_setopt(nativeCURLhandle, CURLOPT_URL, url);/* specify URL to get */ 
-            curl_easy_setopt(nativeCURLhandle, CURLOPT_FOLLOWLOCATION, 1);/* Follow redirects */
-            curl_easy_setopt(nativeCURLhandle, CURLOPT_HEADER, 1);/* Include Header in result */ 
+            curl_easy_setopt(nativeCURLhandle, CURLOPT_URL, url);// specify URL to get  
+            curl_easy_setopt(nativeCURLhandle, CURLOPT_FOLLOWLOCATION, 1);// Follow redirects 
+            curl_easy_setopt(nativeCURLhandle, CURLOPT_HEADER, 1);// Include Header in result  
             rc_buffer = notes_easy_curl_perform(nch1 );
             //printf("Printing Chunk:\n");
             // PrintChunk(&globalNotesCurlHandleList.NotesCurlHandles[nch1]);
@@ -299,35 +294,4 @@ void PrintChunk( struct NotesCurlHandlestruct *content)
   return 0;
 }
 
-int  x_main(int argc, char *argv[])
-{
-  //curl_global_init(CURL_GLOBAL_ALL);
-  //curl_handle = curl_easy_init();/* init the curl session */
-  //curl_easy_setopt(curl_handle, CURLOPT_URL, url);/* specify URL to get */ 
-  //curl_easy_setopt(curl_handle, CURLOPT_FOLLOWLOCATION, 1);/* Follow redirects */
-  //curl_easy_setopt(curl_handle, CURLOPT_HEADER, 1);/* Include Header in result */ 
-  //curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);/* send all data to this function  */ 
- // curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void *)&chunk);/* we pass our 'chunk' struct to the callback function */ 
- 
-  /* some servers don't like requests that are made without a user-agent
-     field, so we provide one */ 
-  //curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "libcurl-agent/1.0");
- 
-  /*  
-  if(res != CURLE_OK) {  // check for errors  
-	fprintf(stderr, "curl_easy_perform() failed: %s\n",
-            //curl_easy_strerror(res));
-  } else {
-	
-	//* Now, our chunk.memory points to a memory block that is chunk.size
-	//* bytes big and contains the remote file. Do something nice with it!
-	 
-	//PrintChunk(chunk.memory, (long)chunk.size);
-  }
-  */
-	//curl_easy_cleanup(curl_handle);  // cleanup curl stuff 
-	//free(chunk.memory);
-	//curl_global_cleanup();  // we're done with libcurl, so clean it up 
-	//return chunk.memory;
-}
-
+*/

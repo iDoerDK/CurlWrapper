@@ -19,7 +19,7 @@ extern "C" {
 #endif
 
 #include <curl/curl.h>
-#include "curlwrapper.h"
+//#include "curlwrapper.h"
 
 typedef unsigned long NotesCurlHandle ;
 
@@ -27,17 +27,28 @@ void PrintNotesCurlStruct (char * text);
 
 unsigned char isNotesCurlHandleValid (NotesCurlHandle handle);
 
- void notes_curl_easy_cleanup(NotesCurlHandle notesHandle);
+ extern void notes_curl_easy_cleanup(NotesCurlHandle notesHandle);
 
- void notes_curl_global_cleanup();
+ extern void notes_curl_global_cleanup();
  
 NotesCurlHandle create_notes_curl(CURL *curlhandle);
 
  extern NotesCurlHandle  notes_curl_easy_init() ;
+ 
 
- CURL *notes_get_native_curl_handle ( NotesCurlHandle entry);
+extern  CURL *notes_get_native_curl_handle ( NotesCurlHandle entry);
 
+/** notes_easy_curl_perform
+    * 
+    * Gets native CURL from CurlWrapper memory structure based on notes_curl_handle
+    * Calls native easy_curl_perfom with provided url;
+    * expands CurlMemory strucuture for notes_curl_handle) to hold returned data
+    * returns pointer to returned data
+    *  @param url_to_fetch - pointer to string with valid url
+    * @return char pointer to the returned string (raw)
+    */
  extern char * notes_easy_curl_perform(NotesCurlHandle notes_curl_handle);
+ 
  
 #ifdef __cplusplus
 }
