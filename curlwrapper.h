@@ -2,12 +2,7 @@
  * File:   curlwrapper.h
  * Author: jarnt
  *
- * Created on February 13, 2018, 8:48 PM
- * Version 1.0 February 13, 2018
- * Version 1.1 March 20, 2018
- * Version 1.2 March 22, 2018
- * Version 1.3 April 6th 2018
- * Version 1.31 April 10th 2018
+ *See CHANGELOG.md for history
  */
 
 
@@ -21,19 +16,19 @@ extern "C" {
 #include <curl/curl.h>
 //#include "curlwrapper.h"
 
+#define CURLWRAPPER_VERSION "0.1.5"
+    
 typedef unsigned long NotesCurlHandle ;
 
-void PrintNotesCurlStruct (char * text);
+/** NotesCurlVersion
+    * .
+    *  Returns the current NotesCurlWrapper as a string;
+    *  @param none
+    * @return char pointer to the returned string (char *)
+    */
+char * get_curlwrapper_version ();
 
-unsigned char isNotesCurlHandleValid (NotesCurlHandle handle);
-
- extern void notes_curl_easy_cleanup(NotesCurlHandle notesHandle);
-
- extern void notes_curl_global_cleanup();
- 
-NotesCurlHandle create_notes_curl(CURL *curlhandle);
-
- extern NotesCurlHandle  notes_curl_easy_init() ;
+extern NotesCurlHandle  notes_curl_easy_init() ;
  
 
 extern  CURL *notes_get_native_curl_handle ( NotesCurlHandle entry);

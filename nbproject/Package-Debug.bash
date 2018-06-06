@@ -63,6 +63,10 @@ cd "${TOP}"
 makeDirectory "${NBTMPDIR}//usr/lib"
 copyFileToTmpDir "${OUTPUT_PATH}" "${NBTMPDIR}/${PACKAGE_TOP_DIR}lib/${OUTPUT_BASENAME}" 0644
 
+cd "${TOP}"
+makeDirectory "${NBTMPDIR}//usr/lib"
+copyFileToTmpDir "${OUTPUT_PATH}" "${NBTMPDIR}/${PACKAGE_TOP_DIR}lib/${OUTPUT_BASENAME}" 0644
+
 
 # Create control file
 cd "${TOP}"
@@ -75,12 +79,13 @@ echo 'Package: libCurlWrapper.so' >> ${CONTROL_FILE}
 echo 'Version: 1.0' >> ${CONTROL_FILE}
 echo 'Architecture: amd64' >> ${CONTROL_FILE}
 echo 'Maintainer: jarnt' >> ${CONTROL_FILE}
-echo 'Description: ...' >> ${CONTROL_FILE}
+echo 'Description: Wrapper for the CURL easy library to encapsulate memory allocations and callbacks. Please note that not all calles to CURL are wrapped. See the README for further information' >> ${CONTROL_FILE}
+echo 'Anything: Anything_text' >> ${CONTROL_FILE}
 
 # Create Debian Package
 cd "${TOP}"
 cd "${NBTMPDIR}/.."
-dpkg-deb  --build ${TMPDIRNAME}
+dpkg-deb Additional-options-here --build ${TMPDIRNAME}
 checkReturnCode
 cd "${TOP}"
 mkdir -p  ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/package

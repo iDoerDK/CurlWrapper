@@ -72,7 +72,7 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libCurlWrapper.${CND_DLIB_EXT}: ${OBJ
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
 	${LINK.c} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libCurlWrapper.${CND_DLIB_EXT} ${OBJECTFILES} ${LDLIBSOPTIONS} -lcurl -shared -fPIC
 
-${OBJECTDIR}/curlwrapper.o: curlwrapper.c 
+${OBJECTDIR}/curlwrapper.o: curlwrapper.c
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
 	$(COMPILE.c) -g -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/curlwrapper.o curlwrapper.c
@@ -86,7 +86,7 @@ ${OBJECTDIR}/curlwrapper.o: curlwrapper.c
 
 ${TESTDIR}/TestFiles/f1: ${TESTDIR}/tests/newsimpletest.o ${OBJECTFILES:%.o=%_nomain.o}
 	${MKDIR} -p ${TESTDIR}/TestFiles
-	${LINK.c} -lCurlWrapper  -o ${TESTDIR}/TestFiles/f1 $^ ${LDLIBSOPTIONS} -Ldist/Debug/GNU-Linux -Wl,-rpath,dist/Debug/GNU-Linux 
+	${LINK.c} -o ${TESTDIR}/TestFiles/f1 $^ ${LDLIBSOPTIONS} -lCurlWrapper  -Ldist/Debug/GNU-Linux -Wl,-rpath,'dist/Debug/GNU-Linux' 
 
 
 ${TESTDIR}/tests/newsimpletest.o: tests/newsimpletest.c 
@@ -120,7 +120,6 @@ ${OBJECTDIR}/curlwrapper_nomain.o: ${OBJECTDIR}/curlwrapper.o curlwrapper.c
 # Clean Targets
 .clean-conf: ${CLEAN_SUBPROJECTS}
 	${RM} -r ${CND_BUILDDIR}/${CND_CONF}
-	${RM} ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libCurlWrapper.${CND_DLIB_EXT}
 
 # Subprojects
 .clean-subprojects:

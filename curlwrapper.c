@@ -1,14 +1,7 @@
 /**
  * @file
  * @author  Jens Arnt <jens@idoer.dk>, iDoer Aps
- * @version 1.3
- * 
- * @section HISTORY
- *  Created on February 13, 2018, 8:48 PM
- * Version 1.0 February 13, 2018
- * Version 1.1 March 20, 2018
- * Version 1.2 March 22, 2018
- * Version 1.3 April 6th 2018
+ * @version 0.1.5
  * 
  * @section LICENSE
  *
@@ -43,9 +36,6 @@ struct NotesCurlHandlestruct {
     size_t return_buffer_size;
     unsigned int active; // 0 for inactive, 1 for active, both curlhandle and return buffer must have a valid addres if active == 1
 } ;
-
-
-
 struct NotesCurlHandleListstruct {
     long index_last_entry; // 0 if empty, >0 if it contains any entries 
     struct NotesCurlHandlestruct  *NotesCurlHandles; // 0 indexed so first entry is 0 (Actually should be NotesCurlHandles[] but due to flexible array member issues declared as "pure" pointers)
@@ -57,8 +47,16 @@ struct NotesCurlHandleListstruct globalNotesCurlHandleList =
     .NotesCurlHandles = ((void *) 0)
 };
 
-void PrintNotesCurlStruct (char * text)
-{
+char * get_curlwrapper_version(){
+#ifdef DEBUG
+    char * notescurlversion =   CURLWRAPPER_VERSION;
+#else
+     char * notescurlversion =  CURLWRAPPER_VERSION;
+#endif
+    return notescurlversion;
+}
+
+void PrintNotesCurlStruct (char * text){
     //printf("> Printing NotesCurlStruct:%s\n",text);
     //printf("> globalNotesCurlHandleList:%p\n",globalNotesCurlHandleList);
     long no_entries = globalNotesCurlHandleList.index_last_entry;
@@ -88,8 +86,7 @@ void PrintNotesCurlStruct (char * text)
     
     //printf("< Printing NotesCurlStruct:%s\n",text);
 }
-unsigned char isNotesCurlHandleValid (NotesCurlHandle handle)
-{
+unsigned char isNotesCurlHandleValid (NotesCurlHandle handle){
     /* The handle is valid if all of the below are true:
         1) the handle is >= 0 (default is -1)
         2) The handle is lower than or equal to index_last_entry
@@ -101,8 +98,7 @@ unsigned char isNotesCurlHandleValid (NotesCurlHandle handle)
             );
     // long a = globalNotesCurlHandleList.index_last_entry;
 }
- void notes_curl_easy_cleanup(NotesCurlHandle notesHandle)
-{
+ void notes_curl_easy_cleanup(NotesCurlHandle notesHandle) {
     if(isNotesCurlHandleValid(notesHandle)) {
         if(globalNotesCurlHandleList.NotesCurlHandles[notesHandle].return_buffer != NULL) {
             free(globalNotesCurlHandleList.NotesCurlHandles[notesHandle].return_buffer);
@@ -116,9 +112,7 @@ unsigned char isNotesCurlHandleValid (NotesCurlHandle handle)
     }
     void curl_easy_cleanup(CURL * handle );
 }
- 
- void notes_curl_global_cleanup()
- {
+ void notes_curl_global_cleanup() {
      unsigned long i=0;
      for (i=0;i<=globalNotesCurlHandleList.index_last_entry; i++)
      {
@@ -131,9 +125,7 @@ unsigned char isNotesCurlHandleValid (NotesCurlHandle handle)
          globalNotesCurlHandleList.index_last_entry = -1;
      }
  }
-
-NotesCurlHandle create_notes_curl(CURL *curlhandle)
-{
+NotesCurlHandle create_notes_curl(CURL *curlhandle){
     long local_index_last_entry = globalNotesCurlHandleList.index_last_entry +1 ;
     struct NotesCurlHandlestruct *localHandles = NULL;
     struct NotesCurlHandlestruct *localHandle = NULL;
@@ -150,6 +142,7 @@ NotesCurlHandle create_notes_curl(CURL *curlhandle)
         localHandle = &localHandles[local_index_last_entry];
         localHandle->curlhandle = curlhandle;
         localHandle->return_buffer =NULL;
+	localHandle->return_buffer_size=0;
         localHandle->active = 1;
   
         rc_NotesCurlHandle = ++globalNotesCurlHandleList.index_last_entry; // Everything successfull until now so update the globalNotesCurlHandleList
@@ -159,9 +152,7 @@ NotesCurlHandle create_notes_curl(CURL *curlhandle)
     //printf("LEAVING create_notes_curl\n\n");                         
     return rc_NotesCurlHandle;
 }
-
- extern NotesCurlHandle  notes_curl_easy_init() 
- {
+ extern NotesCurlHandle  notes_curl_easy_init()  {
      NotesCurlHandle rc_handle = -1;
      CURLcode rccode = -1;
      CURL *localCURLhandle = NULL;
@@ -184,10 +175,9 @@ NotesCurlHandle create_notes_curl(CURL *curlhandle)
      return  rc_handle;
  }
 
- CURL *notes_get_native_curl_handle ( NotesCurlHandle entry)
-// Takes a pointer to NotesCurlHandlList and returns the NoteCurlHandle entry identified by the entry parameter,
+ // Takes a pointer to NotesCurlHandlList and returns the NoteCurlHandle entry identified by the entry parameter,
 // Returns NULL if entry is out of bounds.
-{
+ CURL *notes_get_native_curl_handle ( NotesCurlHandle entry){
     // struct NotesCurlHandleList * nCurlList = hlist; // use our own internal pointer so we do not risk misusing the original    
     CURL *rc_nativeCurlHandle = NULL; // our return value in with default of null in case we mess up.
     long noOfEntries = globalNotesCurlHandleList.index_last_entry;
@@ -197,32 +187,40 @@ NotesCurlHandle create_notes_curl(CURL *curlhandle)
     }
     return rc_nativeCurlHandle;
 }
- 
-static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
-// userp is pointer to a NotesCURL.. entry.
-{
+
+ // userp is pointer to a NotesCURL.. entry. 
+ /*
+  content is the pointer to the chunk of content returned from the perform call
+  size is the size of the specific sub chunk elements.
+  nmemb is the size of the specific chunk expressed in size sizes.
+  */
+static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp){
+    char * cp = (char *) contents; // Only for debugging
   size_t realsize = size * nmemb;
   struct NotesCurlHandlestruct *mem = (struct NotesCurlHandlestruct *)userp;
   //printf("WriteMemoryCallback: size=%zd, nmemb=%zd\n", size, nmemb);
-  //int a; //????
   //char *mymem; // ??
   //mem->return_buffer = realloc( mem->return_buffer, 100);
+  char * rb1 =mem->return_buffer; //debug
   mem->return_buffer = realloc (mem->return_buffer,  mem->return_buffer_size+realsize + 1);
+  char * rb2 =mem->return_buffer; //debug
   if(mem->return_buffer == NULL) {
     /* out of memory! */ 
     //printf("not enough memory (realloc returned NULL)\n");
     return 0;
   }
+  //Get the pointer to the return_buffer "return_buffer_size" into the buffer
+  char * mm = &mem->return_buffer[mem->return_buffer_size]; //debug
   memcpy(&mem->return_buffer[mem->return_buffer_size], contents, realsize);
   mem->return_buffer_size += realsize;
   mem->return_buffer[mem->return_buffer_size] = 0; 
+ // mem->return_buffer = &mem->return_buffer[mem->return_buffer_size];
   //printf("realsize=%zd\n",mem->return_buffer_size);
   //printf("Buffer=%s\n",mem->return_buffer);
    return realsize;
 }
 
-void PrintChunk( struct NotesCurlHandlestruct *content)
-{
+void PrintChunk( struct NotesCurlHandlestruct *content){
     for (long i = 0; i < content->return_buffer_size ; i++)
     {
         printf("%c", content->return_buffer[i]);
@@ -230,8 +228,7 @@ void PrintChunk( struct NotesCurlHandlestruct *content)
     printf("\n");
 }
  
- extern char * notes_easy_curl_perform(NotesCurlHandle notes_curl_handle)
- {
+ extern char * notes_easy_curl_perform(NotesCurlHandle notes_curl_handle){
      char * rc_buffer = NULL;
      CURLcode curl_error;
      //PrintNotesCurlStruct("easy_perform");
@@ -244,7 +241,10 @@ void PrintChunk( struct NotesCurlHandlestruct *content)
          {
              globalNotesCurlHandleList.NotesCurlHandles[notes_curl_handle].return_buffer = malloc(1);
          }
-        curl_easy_setopt(globalNotesCurlHandleList.NotesCurlHandles[notes_curl_handle].curlhandle, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
+#ifdef DEBUG
+	 printf("Pointer to result buffer: %p\n", (void *) &globalNotesCurlHandleList.NotesCurlHandles[notes_curl_handle] );
+#endif
+	 curl_easy_setopt(globalNotesCurlHandleList.NotesCurlHandles[notes_curl_handle].curlhandle, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
         curl_easy_setopt(globalNotesCurlHandleList.NotesCurlHandles[notes_curl_handle].curlhandle  , 
                              CURLOPT_WRITEDATA, 
                              (void *) &globalNotesCurlHandleList.NotesCurlHandles[notes_curl_handle]);
@@ -258,21 +258,25 @@ void PrintChunk( struct NotesCurlHandlestruct *content)
      //printf("rc_buffer:%s\n",rc_buffer);
      return rc_buffer;
  }
-/*
+
  int main(int argc, char *argv[])
 {
-	//char * url = "www.google.com";
-	char * url = argv[1];
+	char * url = "www.google.com";
+	//char * url = argv[1];
 	char * payload;
 	
 	NotesCurlHandle nch1 =-1;
             NotesCurlHandle nch2 =-1;
             CURL *nativeCURLhandle = NULL;
             char* rc_buffer = NULL;
-            
+            #ifdef DEBUG
+		printf("Running in debug mode\n");
+#else
+	printf("Running in normal mode\n");
+#endif
 	nch1 = notes_curl_easy_init();
             //PrintNotesCurlStruct("easy_perform0");
-        	nch2 = notes_curl_easy_init();
+        	//nch2 = notes_curl_easy_init();
             //PrintNotesCurlStruct("easy_perform1");
             nativeCURLhandle = notes_get_native_curl_handle(nch1);
             curl_easy_setopt(nativeCURLhandle, CURLOPT_URL, url);// specify URL to get  
@@ -294,4 +298,3 @@ void PrintChunk( struct NotesCurlHandlestruct *content)
   return 0;
 }
 
-*/
