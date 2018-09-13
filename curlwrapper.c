@@ -1,7 +1,7 @@
 /**
  * @file
  * @author  Jens Arnt <jens@idoer.dk>, iDoer Aps
- * @version 0.1.5
+ * @version 0.1.6
  * 
  * @section LICENSE
  *
@@ -25,8 +25,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <curl/curl.h>
+#include <pthread.h>
 #include "curlwrapper.h"
-
 
 struct NotesCurlHandlestruct {
     // In normal operation bot curlhand and return_buffer must have a valid addres or both have null,
@@ -100,6 +100,8 @@ unsigned char isNotesCurlHandleValid (NotesCurlHandle handle){
 }
  void notes_curl_easy_cleanup(NotesCurlHandle notesHandle) {
     if(isNotesCurlHandleValid(notesHandle)) {
+           pthread_mutex_lock(&lock_free);
+
         if(globalNotesCurlHandleList.NotesCurlHandles[notesHandle].return_buffer != NULL) {
             free(globalNotesCurlHandleList.NotesCurlHandles[notesHandle].return_buffer);
             globalNotesCurlHandleList.NotesCurlHandles[notesHandle].return_buffer=NULL;
@@ -109,6 +111,8 @@ unsigned char isNotesCurlHandleValid (NotesCurlHandle handle){
             globalNotesCurlHandleList.NotesCurlHandles[notesHandle].curlhandle =NULL;
         }
         globalNotesCurlHandleList.NotesCurlHandles[notesHandle].active = 0;
+           pthread_mutex_unlock(&lock_free);
+
     }
     void curl_easy_cleanup(CURL * handle );
 }
@@ -130,7 +134,7 @@ NotesCurlHandle create_notes_curl(CURL *curlhandle){
     struct NotesCurlHandlestruct *localHandles = NULL;
     struct NotesCurlHandlestruct *localHandle = NULL;
     NotesCurlHandle rc_NotesCurlHandle = -1;
-   
+   pthread_mutex_lock(&lock_malloc);
     if(globalNotesCurlHandleList.NotesCurlHandles == NULL) {
         localHandles = malloc( sizeof(struct NotesCurlHandlestruct));
     } else {
@@ -149,6 +153,8 @@ NotesCurlHandle create_notes_curl(CURL *curlhandle){
         globalNotesCurlHandleList.NotesCurlHandles = localHandles;
              //printf("\nInside add_notes_curl5\nlocalhandle=%p\n", localHandle);
     }
+      pthread_mutex_unlock(&lock_malloc);
+
     //printf("LEAVING create_notes_curl\n\n");                         
     return rc_NotesCurlHandle;
 }
@@ -169,7 +175,17 @@ NotesCurlHandle create_notes_curl(CURL *curlhandle){
      if (localCURLhandle != NULL) 
      {
          //printf("Killroy .. again ...\n");
-         rc_handle = create_notes_curl( localCURLhandle);
+         if (pthread_mutex_init(&lock_malloc, NULL) != 0) {
+            printf("\n mutex init failed\n");
+            return 0;
+        }
+        if (pthread_mutex_init(&lock_free, NULL) != 0) {
+            printf("\n mutex init failed\n");
+            return 0;
+        }
+         rc_handle = create_notes_curl( localCURLhandle);    
+        
+         
      }
     // printf("LEAVING notes_curl_easy_init\n\n");
      return  rc_handle;

@@ -16,9 +16,10 @@ extern "C" {
 #include <curl/curl.h>
 //#include "curlwrapper.h"
 
-#define CURLWRAPPER_VERSION "0.1.5"
+#define CURLWRAPPER_VERSION "0.1.6"
     
 typedef unsigned long NotesCurlHandle ;
+pthread_mutex_t lock_malloc, lock_free;
 
 /** NotesCurlVersion
     * .
