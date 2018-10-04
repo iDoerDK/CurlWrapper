@@ -26,6 +26,7 @@
 #include <string.h>
 #include <curl/curl.h>
 #include <pthread.h>
+#include <syslog.h>
 #include "curlwrapper.h"
 
 struct NotesCurlHandlestruct {
@@ -66,21 +67,21 @@ void PrintNotesCurlStruct (char * text){
         switch (no_entries)     
         {
         case -1:
-            //printf("  NotesCurlStruct has been initialized with %ld entries\n",no_entries);    
-            //printf("  NotesCurlHandles at %p \n",globalNotesCurlHandleList.NotesCurlHandles);
+            syslog(LOG_DEBUG,"%s NotesCurlStruct has been initialized with %ld entries",text,no_entries);    
+            syslog(LOG_DEBUG, "%s NotesCurlHandles at %p",text,globalNotesCurlHandleList.NotesCurlHandles);
 
             break;
         default:
-            //printf("  NotesCurlStruct last entry is %ld\n",no_entries);
-            //printf("  NotesCurlHandles at %p \n",globalNotesCurlHandleList.NotesCurlHandles);
+            syslog(LOG_DEBUG,"%s NotesCurlStruct last entry is %ld",text,no_entries);
+            syslog(LOG_DEBUG, "%s NotesCurlHandles at %p",text,globalNotesCurlHandleList.NotesCurlHandles);
             for( int i = 0; i<=no_entries;i++)
             {
-                printf("    %i, Active=%i, CURLpointer at %p, Returnbuffer at %p\n",i,globalNotesCurlHandleList.NotesCurlHandles[i].active, globalNotesCurlHandleList.NotesCurlHandles[i].curlhandle, globalNotesCurlHandleList.NotesCurlHandles[i].return_buffer);
+                syslog(LOG_DEBUG,"%s    %i, Active=%i, CURLpointer at %p, Returnbuffer at %p, size=%zu",text,i,globalNotesCurlHandleList.NotesCurlHandles[i].active, globalNotesCurlHandleList.NotesCurlHandles[i].curlhandle, globalNotesCurlHandleList.NotesCurlHandles[i].return_buffer,globalNotesCurlHandleList.NotesCurlHandles[i].return_buffer_size);
             }
             break;
         }
     } else {
-        //printf("  NotesCurlStruct has not yet been initialized\n");
+        syslog(LOG_DEBUG,"%s NotesCurlStruct has not yet been initialized",text);
         1==1;
     }
     
@@ -100,7 +101,8 @@ unsigned char isNotesCurlHandleValid (NotesCurlHandle handle){
 }
  void notes_curl_easy_cleanup(NotesCurlHandle notesHandle) {
     if(isNotesCurlHandleValid(notesHandle)) {
-           pthread_mutex_lock(&lock_free);
+        pthread_mutex_lock(&lock_free);
+        syslog(LOG_DEBUG, "[notes_curl_easy_cleanup] Mutex Lock lock_free");
 
         if(globalNotesCurlHandleList.NotesCurlHandles[notesHandle].return_buffer != NULL) {
             free(globalNotesCurlHandleList.NotesCurlHandles[notesHandle].return_buffer);
@@ -111,9 +113,10 @@ unsigned char isNotesCurlHandleValid (NotesCurlHandle handle){
             globalNotesCurlHandleList.NotesCurlHandles[notesHandle].curlhandle =NULL;
         }
         globalNotesCurlHandleList.NotesCurlHandles[notesHandle].active = 0;
-           pthread_mutex_unlock(&lock_free);
-
+        pthread_mutex_unlock(&lock_free);
+        syslog(LOG_DEBUG, "[notes_curl_easy_cleanup] Mutex Unlock lock_free");
     }
+    
     void curl_easy_cleanup(CURL * handle );
 }
  void notes_curl_global_cleanup() {
@@ -128,6 +131,10 @@ unsigned char isNotesCurlHandleValid (NotesCurlHandle handle){
          globalNotesCurlHandleList.NotesCurlHandles = NULL;
          globalNotesCurlHandleList.index_last_entry = -1;
      }
+          syslog(LOG_NOTICE, "CurlWrapper de-instantiated");
+          PrintNotesCurlStruct("[<notes_curl_global_cleanup]");
+          closelog();
+
  }
 NotesCurlHandle create_notes_curl(CURL *curlhandle){
     long local_index_last_entry = globalNotesCurlHandleList.index_last_entry +1 ;
@@ -135,6 +142,8 @@ NotesCurlHandle create_notes_curl(CURL *curlhandle){
     struct NotesCurlHandlestruct *localHandle = NULL;
     NotesCurlHandle rc_NotesCurlHandle = -1;
    pthread_mutex_lock(&lock_malloc);
+   syslog(LOG_DEBUG, "[create_notes_curl] Mutex Lock malloc");
+
     if(globalNotesCurlHandleList.NotesCurlHandles == NULL) {
         localHandles = malloc( sizeof(struct NotesCurlHandlestruct));
     } else {
@@ -146,7 +155,7 @@ NotesCurlHandle create_notes_curl(CURL *curlhandle){
         localHandle = &localHandles[local_index_last_entry];
         localHandle->curlhandle = curlhandle;
         localHandle->return_buffer =NULL;
-	localHandle->return_buffer_size=0;
+        localHandle->return_buffer_size=0;
         localHandle->active = 1;
   
         rc_NotesCurlHandle = ++globalNotesCurlHandleList.index_last_entry; // Everything successfull until now so update the globalNotesCurlHandleList
@@ -154,6 +163,8 @@ NotesCurlHandle create_notes_curl(CURL *curlhandle){
              //printf("\nInside add_notes_curl5\nlocalhandle=%p\n", localHandle);
     }
       pthread_mutex_unlock(&lock_malloc);
+      syslog(LOG_DEBUG, "[create_notes_curl] Mutex Unlock malloc");
+
 
     //printf("LEAVING create_notes_curl\n\n");                         
     return rc_NotesCurlHandle;
@@ -162,6 +173,24 @@ NotesCurlHandle create_notes_curl(CURL *curlhandle){
      NotesCurlHandle rc_handle = -1;
      CURLcode rccode = -1;
      CURL *localCURLhandle = NULL;
+     
+     openlog("CurlWrapper", LOG_PID|LOG_CONS, LOG_USER);
+     syslog(LOG_NOTICE, "CurlWrapper version '%s'",get_curlwrapper_version());
+     
+       if (pthread_mutex_init(&lock_malloc, NULL) != 0) {
+            syslog(LOG_ERR,"[notes_curl_easy_init] mutex init lock_malloc failed");
+            return 0;
+        }
+        if (pthread_mutex_init(&lock_free, NULL) != 0) {
+           syslog(LOG_ERR,"[notes_curl_easy_init] mutex init lock_free failed");
+            return 0;
+        }
+        if (pthread_mutex_init(&lock_callback, NULL) != 0) {
+            syslog(LOG_ERR,"[notes_curl_easy_init] mutex init lock_callback failed");
+            return 0;
+        }
+     PrintNotesCurlStruct("[>notes_curl_easy_init]");
+     
      //PrintNotesCurlStruct("easy_init0");
      // rccode = notes_curl_global_init();
      //printf("ENTERING notes_curl_easy_init\n");
@@ -174,20 +203,11 @@ NotesCurlHandle create_notes_curl(CURL *curlhandle){
 
      if (localCURLhandle != NULL) 
      {
-         //printf("Killroy .. again ...\n");
-         if (pthread_mutex_init(&lock_malloc, NULL) != 0) {
-            printf("\n mutex init failed\n");
-            return 0;
-        }
-        if (pthread_mutex_init(&lock_free, NULL) != 0) {
-            printf("\n mutex init failed\n");
-            return 0;
-        }
          rc_handle = create_notes_curl( localCURLhandle);    
-        
-         
      }
     // printf("LEAVING notes_curl_easy_init\n\n");
+          PrintNotesCurlStruct("[<notes_curl_easy_init]");
+         
      return  rc_handle;
  }
 
@@ -214,15 +234,19 @@ static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, voi
     char * cp = (char *) contents; // Only for debugging
   size_t realsize = size * nmemb;
   struct NotesCurlHandlestruct *mem = (struct NotesCurlHandlestruct *)userp;
-  //printf("WriteMemoryCallback: size=%zd, nmemb=%zd\n", size, nmemb);
-  //char *mymem; // ??
-  //mem->return_buffer = realloc( mem->return_buffer, 100);
-  char * rb1 =mem->return_buffer; //debug
+ 
+  //char * rb1 =mem->return_buffer; //debug
+  pthread_mutex_lock(&lock_callback);
+  syslog(LOG_DEBUG, "[WriteMemoryCallback] Mutex Lock callback");
+
   mem->return_buffer = realloc (mem->return_buffer,  mem->return_buffer_size+realsize + 1);
-  char * rb2 =mem->return_buffer; //debug
+  //char * rb2 =mem->return_buffer; //debug
   if(mem->return_buffer == NULL) {
     /* out of memory! */ 
-    //printf("not enough memory (realloc returned NULL)\n");
+    syslog(LOG_ERR,"not enough memory (realloc returned NULL)");
+      pthread_mutex_unlock(&lock_callback);
+        syslog(LOG_DEBUG, "[WriteMemoryCallback] Mutex Unlock callback");
+
     return 0;
   }
   //Get the pointer to the return_buffer "return_buffer_size" into the buffer
@@ -230,9 +254,14 @@ static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, voi
   memcpy(&mem->return_buffer[mem->return_buffer_size], contents, realsize);
   mem->return_buffer_size += realsize;
   mem->return_buffer[mem->return_buffer_size] = 0; 
+  pthread_mutex_unlock(&lock_callback);
+  syslog(LOG_DEBUG, "[WriteMemoryCallback] Mutex Unlock callback");
+
+
  // mem->return_buffer = &mem->return_buffer[mem->return_buffer_size];
   //printf("realsize=%zd\n",mem->return_buffer_size);
   //printf("Buffer=%s\n",mem->return_buffer);
+  syslog(LOG_INFO,"[<WriteMemoryCallback] returning size=%zu",realsize);
    return realsize;
 }
 
@@ -247,6 +276,8 @@ void PrintChunk( struct NotesCurlHandlestruct *content){
  extern char * notes_easy_curl_perform(NotesCurlHandle notes_curl_handle){
      char * rc_buffer = NULL;
      CURLcode curl_error;
+               syslog(LOG_NOTICE, "[>notes_easy_curl_perform]");
+
      //PrintNotesCurlStruct("easy_perform");
      
       //curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);/* send all data to this function  */ 
@@ -260,8 +291,8 @@ void PrintChunk( struct NotesCurlHandlestruct *content){
 #ifdef DEBUG
 	 printf("Pointer to result buffer: %p\n", (void *) &globalNotesCurlHandleList.NotesCurlHandles[notes_curl_handle] );
 #endif
-	 curl_easy_setopt(globalNotesCurlHandleList.NotesCurlHandles[notes_curl_handle].curlhandle, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
-        curl_easy_setopt(globalNotesCurlHandleList.NotesCurlHandles[notes_curl_handle].curlhandle  , 
+         curl_easy_setopt(globalNotesCurlHandleList.NotesCurlHandles[notes_curl_handle].curlhandle, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
+         curl_easy_setopt(globalNotesCurlHandleList.NotesCurlHandles[notes_curl_handle].curlhandle  , 
                              CURLOPT_WRITEDATA, 
                              (void *) &globalNotesCurlHandleList.NotesCurlHandles[notes_curl_handle]);
         
@@ -272,6 +303,9 @@ void PrintChunk( struct NotesCurlHandlestruct *content){
         }
      }
      //printf("rc_buffer:%s\n",rc_buffer);
+     PrintNotesCurlStruct("[<notes_easy_curl_perform]");
+     syslog(LOG_NOTICE, "[<notes_easy_curl_perform]");
+
      return rc_buffer;
  }
 
