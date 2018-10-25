@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   curlwrapper.h
  * Author: jarnt
  *
@@ -16,10 +16,12 @@ extern "C" {
 #include <curl/curl.h>
 //#include "curlwrapper.h"
 
-#define CURLWRAPPER_VERSION "0.1.7"
+#define CURLWRAPPER_VERSION "0.1.9"
+#define CURLWRAPPER_LOGLEVEL "debug" // not yet used
+//#define CURLWRAPPER_DEBUG 1
     
 typedef unsigned long NotesCurlHandle ;
-pthread_mutex_t lock_malloc, lock_free, lock_callback;
+pthread_mutex_t lock_my_malloc, lock_free, lock_callback;
 
 /** NotesCurlVersion
     * .
@@ -28,11 +30,6 @@ pthread_mutex_t lock_malloc, lock_free, lock_callback;
     * @return char pointer to the returned string (char *)
     */
 char * get_curlwrapper_version ();
-
-extern NotesCurlHandle  notes_curl_easy_init() ;
- 
-
-extern  CURL *notes_get_native_curl_handle ( NotesCurlHandle entry);
 
 /** notes_easy_curl_perform
     * 
@@ -43,8 +40,19 @@ extern  CURL *notes_get_native_curl_handle ( NotesCurlHandle entry);
     *  @param url_to_fetch - pointer to string with valid url
     * @return char pointer to the returned string (raw)
     */
- extern char * notes_easy_curl_perform(NotesCurlHandle notes_curl_handle);
+extern char * notes_easy_curl_perform(NotesCurlHandle notes_curl_handle); 
+extern void notes_curl_global_cleanup();
+extern NotesCurlHandle  notes_curl_easy_init() ;
+extern void notes_curl_easy_cleanup(NotesCurlHandle notesHandle);
+extern  CURL *notes_get_native_curl_handle ( NotesCurlHandle entry);
+
+ /*
+  * Private Functions
+  */
  
+ void *my_malloc ( size_t numbytes ) ;
+ void *my_realloc( void *current, size_t size ) ;
+ void my_free( void *region );
  
 #ifdef __cplusplus
 }

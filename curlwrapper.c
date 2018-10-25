@@ -1,7 +1,7 @@
 /**
  * @file
- * @author  Jens Arnt <jens@idoer.dk>, iDoer Aps
- * @version 0.1.6
+ * @author  Jens Arnt <jens@idoer.dk>, iDoer ApS
+ * @version 
  * 
  * @section LICENSE
  *
@@ -102,22 +102,29 @@ unsigned char isNotesCurlHandleValid (NotesCurlHandle handle){
  void notes_curl_easy_cleanup(NotesCurlHandle notesHandle) {
     if(isNotesCurlHandleValid(notesHandle)) {
         pthread_mutex_lock(&lock_free);
+#ifdef CURLWRAPPER_DEBUG
         syslog(LOG_DEBUG, "[notes_curl_easy_cleanup] Mutex Lock lock_free");
+#endif
 
+	// Cleanup/free any return_buffer allocations
         if(globalNotesCurlHandleList.NotesCurlHandles[notesHandle].return_buffer != NULL) {
-            free(globalNotesCurlHandleList.NotesCurlHandles[notesHandle].return_buffer);
-            globalNotesCurlHandleList.NotesCurlHandles[notesHandle].return_buffer=NULL;
+            my_free(globalNotesCurlHandleList.NotesCurlHandles[notesHandle].return_buffer);
+            //globalNotesCurlHandleList.NotesCurlHandles[notesHandle].return_buffer=NULL;
         }
+	// Deregister any active Curl handles.
         if(globalNotesCurlHandleList.NotesCurlHandles[notesHandle].curlhandle != NULL){
             curl_easy_cleanup(globalNotesCurlHandleList.NotesCurlHandles[notesHandle].curlhandle);
-            globalNotesCurlHandleList.NotesCurlHandles[notesHandle].curlhandle =NULL;
+           // globalNotesCurlHandleList.NotesCurlHandles[notesHandle].curlhandle =NULL;
         }
+	
         globalNotesCurlHandleList.NotesCurlHandles[notesHandle].active = 0;
         pthread_mutex_unlock(&lock_free);
+        #ifdef CURLWRAPPER_DEBUG
         syslog(LOG_DEBUG, "[notes_curl_easy_cleanup] Mutex Unlock lock_free");
+#endif
     }
     
-    void curl_easy_cleanup(CURL * handle );
+    
 }
  void notes_curl_global_cleanup() {
      unsigned long i=0;
@@ -127,27 +134,31 @@ unsigned char isNotesCurlHandleValid (NotesCurlHandle handle){
      }
      if(globalNotesCurlHandleList.NotesCurlHandles != NULL) 
      {
-         free(globalNotesCurlHandleList.NotesCurlHandles);
+         my_free(globalNotesCurlHandleList.NotesCurlHandles);
          globalNotesCurlHandleList.NotesCurlHandles = NULL;
          globalNotesCurlHandleList.index_last_entry = -1;
      }
+     #ifdef CURLWRAPPER_DEBUG
           syslog(LOG_NOTICE, "CurlWrapper de-instantiated");
-          PrintNotesCurlStruct("[<notes_curl_global_cleanup]");
+           PrintNotesCurlStruct("[<notes_curl_global_cleanup]");
+#endif
+           
           closelog();
-
  }
 NotesCurlHandle create_notes_curl(CURL *curlhandle){
     long local_index_last_entry = globalNotesCurlHandleList.index_last_entry +1 ;
     struct NotesCurlHandlestruct *localHandles = NULL;
     struct NotesCurlHandlestruct *localHandle = NULL;
     NotesCurlHandle rc_NotesCurlHandle = -1;
-   pthread_mutex_lock(&lock_malloc);
-   syslog(LOG_DEBUG, "[create_notes_curl] Mutex Lock malloc");
-
+   pthread_mutex_lock(&lock_my_malloc);
+   #ifdef CURLWRAPPER_DEBUG
+   syslog(LOG_DEBUG, "[create_notes_curl] Mutex Lock my_malloc");
+#endif
+   
     if(globalNotesCurlHandleList.NotesCurlHandles == NULL) {
-        localHandles = malloc( sizeof(struct NotesCurlHandlestruct));
+        localHandles = my_malloc( sizeof(struct NotesCurlHandlestruct));
     } else {
-        localHandles = (struct NotesCurlHandlestruct *) realloc(globalNotesCurlHandleList.NotesCurlHandles, (local_index_last_entry+1) * sizeof(struct NotesCurlHandlestruct));
+        localHandles = (struct NotesCurlHandlestruct *) my_realloc(globalNotesCurlHandleList.NotesCurlHandles, (local_index_last_entry+1) * sizeof(struct NotesCurlHandlestruct));
     }
        
     if (localHandles != NULL) {
@@ -162,9 +173,10 @@ NotesCurlHandle create_notes_curl(CURL *curlhandle){
         globalNotesCurlHandleList.NotesCurlHandles = localHandles;
              //printf("\nInside add_notes_curl5\nlocalhandle=%p\n", localHandle);
     }
-      pthread_mutex_unlock(&lock_malloc);
-      syslog(LOG_DEBUG, "[create_notes_curl] Mutex Unlock malloc");
-
+      pthread_mutex_unlock(&lock_my_malloc);
+      #ifdef CURLWRAPPER_DEBUG
+      syslog(LOG_DEBUG, "[create_notes_curl] Mutex Unlock my_malloc");
+#endif
 
     //printf("LEAVING create_notes_curl\n\n");                         
     return rc_NotesCurlHandle;
@@ -177,8 +189,9 @@ NotesCurlHandle create_notes_curl(CURL *curlhandle){
      openlog("CurlWrapper", LOG_PID|LOG_CONS, LOG_USER);
      syslog(LOG_NOTICE, "CurlWrapper version '%s'",get_curlwrapper_version());
      
-       if (pthread_mutex_init(&lock_malloc, NULL) != 0) {
-            syslog(LOG_ERR,"[notes_curl_easy_init] mutex init lock_malloc failed");
+       if (pthread_mutex_init(&lock_my_malloc, NULL) != 0) {
+          
+            syslog(LOG_ERR,"[notes_curl_easy_init] mutex init lock_my_malloc failed");
             return 0;
         }
         if (pthread_mutex_init(&lock_free, NULL) != 0) {
@@ -189,26 +202,19 @@ NotesCurlHandle create_notes_curl(CURL *curlhandle){
             syslog(LOG_ERR,"[notes_curl_easy_init] mutex init lock_callback failed");
             return 0;
         }
+     #ifdef CURLWRAPPER_DEBUG
      PrintNotesCurlStruct("[>notes_curl_easy_init]");
-     
-     //PrintNotesCurlStruct("easy_init0");
-     // rccode = notes_curl_global_init();
-     //printf("ENTERING notes_curl_easy_init\n");
-     //PrintNotesCurlStruct("easy_init1");
-     
+#endif
      localCURLhandle = curl_easy_init();
-     //PrintNotesCurlStruct("easy_init2");
-     //printf("lCURLhandle:%p\n", localCURLhandle);
-     //printf("CURLcode:%u\n", rccode);
-
      if (localCURLhandle != NULL) 
      {
          rc_handle = create_notes_curl( localCURLhandle);    
      }
     // printf("LEAVING notes_curl_easy_init\n\n");
+     #ifdef CURLWRAPPER_DEBUG
           PrintNotesCurlStruct("[<notes_curl_easy_init]");
-         
-     return  rc_handle;
+#endif
+          return  rc_handle;
  }
 
  // Takes a pointer to NotesCurlHandlList and returns the NoteCurlHandle entry identified by the entry parameter,
@@ -231,23 +237,22 @@ NotesCurlHandle create_notes_curl(CURL *curlhandle){
   nmemb is the size of the specific chunk expressed in size sizes.
   */
 static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp){
-    char * cp = (char *) contents; // Only for debugging
+//    char * cp = (char *) contents; // Only for debugging
   size_t realsize = size * nmemb;
   struct NotesCurlHandlestruct *mem = (struct NotesCurlHandlestruct *)userp;
  
   //char * rb1 =mem->return_buffer; //debug
   pthread_mutex_lock(&lock_callback);
+  #ifdef CURLWRAPPER_DEBUG
   syslog(LOG_DEBUG, "[WriteMemoryCallback] Mutex Lock callback");
-
-  mem->return_buffer = realloc (mem->return_buffer,  mem->return_buffer_size+realsize + 1);
+#endif
+  mem->return_buffer = my_realloc (mem->return_buffer,  mem->return_buffer_size+realsize + 1);
   //char * rb2 =mem->return_buffer; //debug
-  if(mem->return_buffer == NULL) {
-    /* out of memory! */ 
-    syslog(LOG_ERR,"not enough memory (realloc returned NULL)");
-      pthread_mutex_unlock(&lock_callback);
-        syslog(LOG_DEBUG, "[WriteMemoryCallback] Mutex Unlock callback");
-
-    return 0;
+  if(mem->return_buffer == NULL) { /* out of memory! */ 
+	syslog(LOG_ERR,"not enough memory (my_realloc returned NULL)");
+	pthread_mutex_unlock(&lock_callback);
+	syslog(LOG_DEBUG, "[WriteMemoryCallback] Mutex Unlock callback");
+	return 0;
   }
   //Get the pointer to the return_buffer "return_buffer_size" into the buffer
   char * mm = &mem->return_buffer[mem->return_buffer_size]; //debug
@@ -255,14 +260,18 @@ static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, voi
   mem->return_buffer_size += realsize;
   mem->return_buffer[mem->return_buffer_size] = 0; 
   pthread_mutex_unlock(&lock_callback);
+ #ifdef CURLWRAPPER_DEBUG
   syslog(LOG_DEBUG, "[WriteMemoryCallback] Mutex Unlock callback");
-
+#endif 
+  
 
  // mem->return_buffer = &mem->return_buffer[mem->return_buffer_size];
   //printf("realsize=%zd\n",mem->return_buffer_size);
   //printf("Buffer=%s\n",mem->return_buffer);
+  #ifdef CURLWRAPPER_DEBUG
   syslog(LOG_INFO,"[<WriteMemoryCallback] returning size=%zu",realsize);
-   return realsize;
+#endif
+  return realsize;
 }
 
 void PrintChunk( struct NotesCurlHandlestruct *content){
@@ -276,8 +285,9 @@ void PrintChunk( struct NotesCurlHandlestruct *content){
  extern char * notes_easy_curl_perform(NotesCurlHandle notes_curl_handle){
      char * rc_buffer = NULL;
      CURLcode curl_error;
+     #ifdef CURLWRAPPER_DEBUG
                syslog(LOG_NOTICE, "[>notes_easy_curl_perform]");
-
+#endif
      //PrintNotesCurlStruct("easy_perform");
      
       //curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);/* send all data to this function  */ 
@@ -285,41 +295,53 @@ void PrintChunk( struct NotesCurlHandlestruct *content){
      if (isNotesCurlHandleValid(notes_curl_handle))
      { 
          if(globalNotesCurlHandleList.NotesCurlHandles[notes_curl_handle].return_buffer == NULL)
-         {
-             globalNotesCurlHandleList.NotesCurlHandles[notes_curl_handle].return_buffer = malloc(1);
-         }
-#ifdef DEBUG
+         { // If the buffer is not allocated at all, do an intial allocation of one byte
+             globalNotesCurlHandleList.NotesCurlHandles[notes_curl_handle].return_buffer = my_malloc(1);
+         }	 else {
+	     globalNotesCurlHandleList.NotesCurlHandles[notes_curl_handle].return_buffer = my_realloc(globalNotesCurlHandleList.NotesCurlHandles[notes_curl_handle].return_buffer,1);
+	     globalNotesCurlHandleList.NotesCurlHandles[notes_curl_handle].return_buffer_size=0;
+         } 
+	     
+#ifdef CURLWRAPPER_DEBUG
 	 printf("Pointer to result buffer: %p\n", (void *) &globalNotesCurlHandleList.NotesCurlHandles[notes_curl_handle] );
 #endif
          curl_easy_setopt(globalNotesCurlHandleList.NotesCurlHandles[notes_curl_handle].curlhandle, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
          curl_easy_setopt(globalNotesCurlHandleList.NotesCurlHandles[notes_curl_handle].curlhandle  , 
                              CURLOPT_WRITEDATA, 
                              (void *) &globalNotesCurlHandleList.NotesCurlHandles[notes_curl_handle]);
+        char *url = NULL;
+#ifdef CURLWRAPPER_DEBUG
+        curl_easy_getinfo(globalNotesCurlHandleList.NotesCurlHandles[notes_curl_handle].curlhandle, CURLINFO_EFFECTIVE_URL, &url);
+        if(url)
+            syslog(LOG_DEBUG,"[<notes_easy_curl_perform] URL=%s", url); 
+#endif
         
-        curl_error = curl_easy_perform(globalNotesCurlHandleList.NotesCurlHandles[notes_curl_handle].curlhandle);
+       curl_error = curl_easy_perform(globalNotesCurlHandleList.NotesCurlHandles[notes_curl_handle].curlhandle);
         if (curl_error == CURLE_OK) 
         {
             rc_buffer = globalNotesCurlHandleList.NotesCurlHandles[notes_curl_handle].return_buffer;
         }
      }
      //printf("rc_buffer:%s\n",rc_buffer);
+ #ifdef CURLWRAPPER_DEBUG
      PrintNotesCurlStruct("[<notes_easy_curl_perform]");
-     syslog(LOG_NOTICE, "[<notes_easy_curl_perform]");
 
+     syslog(LOG_NOTICE, "[<notes_easy_curl_perform]");
+#endif
      return rc_buffer;
  }
 
  int main(int argc, char *argv[])
 {
-	char * url = "www.google.com";
-	//char * url = argv[1];
+	//char * url = "www.google.com";
+	char * url = argv[1];
 	char * payload;
 	
 	NotesCurlHandle nch1 =-1;
             NotesCurlHandle nch2 =-1;
             CURL *nativeCURLhandle = NULL;
             char* rc_buffer = NULL;
-            #ifdef DEBUG
+#ifdef CURLWRAPPER_DEBUG
 		printf("Running in debug mode\n");
 #else
 	printf("Running in normal mode\n");
@@ -328,23 +350,56 @@ void PrintChunk( struct NotesCurlHandlestruct *content){
             //PrintNotesCurlStruct("easy_perform0");
         	//nch2 = notes_curl_easy_init();
             //PrintNotesCurlStruct("easy_perform1");
-            nativeCURLhandle = notes_get_native_curl_handle(nch1);
-            curl_easy_setopt(nativeCURLhandle, CURLOPT_URL, url);// specify URL to get  
-            curl_easy_setopt(nativeCURLhandle, CURLOPT_FOLLOWLOCATION, 1);// Follow redirects 
-            curl_easy_setopt(nativeCURLhandle, CURLOPT_HEADER, 1);// Include Header in result  
-            rc_buffer = notes_easy_curl_perform(nch1 );
-            //printf("Printing Chunk:\n");
-            // PrintChunk(&globalNotesCurlHandleList.NotesCurlHandles[nch1]);
+	printf("libCurlWrapper version: %s\n", get_curlwrapper_version());    
+	nativeCURLhandle = notes_get_native_curl_handle(nch1);
+	for (int i=0; i++<1;){
             
+		curl_easy_setopt(nativeCURLhandle, CURLOPT_URL, url);// specify URL to get  
+		curl_easy_setopt(nativeCURLhandle, CURLOPT_FOLLOWLOCATION, 1);// Follow redirects 
+		curl_easy_setopt(nativeCURLhandle, CURLOPT_HEADER, 1);// Include Header in result  
+		rc_buffer = notes_easy_curl_perform(nch1 );
+            }
             notes_curl_global_cleanup();
             //PrintNotesCurlStruct("easy_perform3");
             //notes_curl_easy_cleanup(nch2);
             //PrintNotesCurlStruct("easy_perform3");
 
-	printf("Asking for URL:%s\n", url );
+	//printf("Asking for URL:%s\n", url );
 //	payload = GetNumberOfBytes(url);
-	printf("Returned payload %s\n", rc_buffer);
+	//printf("Returned payload %s\n", rc_buffer);
 
   return 0;
 }
+ 
+ void *my_malloc ( size_t numbytes ) {
+	void *r_addr = NULL;
+        #ifdef CURLWRAPPER_DEBUG
+	syslog(LOG_DEBUG,"[my_malloc] request size=%zu", numbytes);
+#endif
+      
+        r_addr = malloc( numbytes );
+         #ifdef CURLWRAPPER_DEBUG
+	syslog(LOG_DEBUG,"[my_malloc] new pointer at %p,",r_addr);
+#endif
+        return (r_addr); 
+ }
+ 
+ void *my_realloc( void *current, size_t size ) {
+	void *r_addr = NULL;
+#ifdef CURLWRAPPER_DEBUG
+	syslog(LOG_DEBUG,"[my_realloc] old pointer at %p, , size=%zu",current, size);
+#endif
+	r_addr = realloc( current,  size );
+#ifdef CURLWRAPPER_DEBUG
+	syslog(LOG_DEBUG,"[my_realloc] new pointer at %p,",r_addr);
+#endif
+	return(r_addr);
+ }
 
+ void my_free( void *region ){
+	int rc = -1;
+#ifdef CURLWRAPPER_DEBUG
+        syslog(LOG_DEBUG,"[my_free] free pointer at %p,",region);
+#endif
+        free( region );
+ }

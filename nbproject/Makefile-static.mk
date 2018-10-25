@@ -23,7 +23,7 @@ AS=as
 # Macros
 CND_PLATFORM=GNU-Linux
 CND_DLIB_EXT=so
-CND_CONF=Debug
+CND_CONF=static
 CND_DISTDIR=dist
 CND_BUILDDIR=build
 
@@ -66,16 +66,16 @@ LDLIBSOPTIONS=
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}
-	"${MAKE}"  -f nbproject/Makefile-${CND_CONF}.mk ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libCurlWrapper.${CND_DLIB_EXT}
+	"${MAKE}"  -f nbproject/Makefile-${CND_CONF}.mk ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/curlwrapper
 
-${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libCurlWrapper.${CND_DLIB_EXT}: ${OBJECTFILES}
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/curlwrapper: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	${LINK.c} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/libCurlWrapper.${CND_DLIB_EXT} ${OBJECTFILES} ${LDLIBSOPTIONS} -lcurl -shared -fPIC
+	${LINK.c} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/curlwrapper ${OBJECTFILES} ${LDLIBSOPTIONS} -lcurl
 
 ${OBJECTDIR}/curlwrapper.o: curlwrapper.c
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.c) -g -fPIC  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/curlwrapper.o curlwrapper.c
+	$(COMPILE.c) -g -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/curlwrapper.o curlwrapper.c
 
 # Subprojects
 .build-subprojects:
@@ -86,13 +86,13 @@ ${OBJECTDIR}/curlwrapper.o: curlwrapper.c
 
 ${TESTDIR}/TestFiles/f1: ${TESTDIR}/tests/newsimpletest.o ${OBJECTFILES:%.o=%_nomain.o}
 	${MKDIR} -p ${TESTDIR}/TestFiles
-	${LINK.c} -o ${TESTDIR}/TestFiles/f1 $^ ${LDLIBSOPTIONS} -lCurlWrapper  -Ldist/Debug/GNU-Linux -Wl,-rpath,'dist/Debug/GNU-Linux' 
+	${LINK.c} -o ${TESTDIR}/TestFiles/f1 $^ ${LDLIBSOPTIONS}   `cppunit-config --libs`   
 
 
 ${TESTDIR}/tests/newsimpletest.o: tests/newsimpletest.c 
 	${MKDIR} -p ${TESTDIR}/tests
 	${RM} "$@.d"
-	$(COMPILE.c) -g -I. -MMD -MP -MF "$@.d" -o ${TESTDIR}/tests/newsimpletest.o tests/newsimpletest.c
+	$(COMPILE.c) -g -I. `cppunit-config --cflags` -MMD -MP -MF "$@.d" -o ${TESTDIR}/tests/newsimpletest.o tests/newsimpletest.c
 
 
 ${OBJECTDIR}/curlwrapper_nomain.o: ${OBJECTDIR}/curlwrapper.o curlwrapper.c 
@@ -103,7 +103,7 @@ ${OBJECTDIR}/curlwrapper_nomain.o: ${OBJECTDIR}/curlwrapper.o curlwrapper.c
 	   (echo "$$NMOUTPUT" | ${GREP} 'T _main$$'); \
 	then  \
 	    ${RM} "$@.d";\
-	    $(COMPILE.c) -g -fPIC  -Dmain=__nomain -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/curlwrapper_nomain.o curlwrapper.c;\
+	    $(COMPILE.c) -g -Dmain=__nomain -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/curlwrapper_nomain.o curlwrapper.c;\
 	else  \
 	    ${CP} ${OBJECTDIR}/curlwrapper.o ${OBJECTDIR}/curlwrapper_nomain.o;\
 	fi

@@ -22,6 +22,14 @@ CND_ARTIFACT_PATH_Release=dist/Release/GNU-Linux/libCurlWrapper.so
 CND_PACKAGE_DIR_Release=dist/Release/GNU-Linux/package
 CND_PACKAGE_NAME_Release=libCurlWrapper.so.deb
 CND_PACKAGE_PATH_Release=dist/Release/GNU-Linux/package/libCurlWrapper.so.deb
+# static configuration
+CND_PLATFORM_static=GNU-Linux
+CND_ARTIFACT_DIR_static=dist/static/GNU-Linux
+CND_ARTIFACT_NAME_static=curlwrapper
+CND_ARTIFACT_PATH_static=dist/static/GNU-Linux/curlwrapper
+CND_PACKAGE_DIR_static=dist/static/GNU-Linux/package
+CND_PACKAGE_NAME_static=curlwrapper.tar
+CND_PACKAGE_PATH_static=dist/static/GNU-Linux/package/curlwrapper.tar
 #
 # include compiler specific variables
 #
