@@ -1,6 +1,17 @@
 # ChangeLog file for CurlWrapper
 
 # History
+## [0.1.9] - 2018-10-25
+### Added
+ - Added debug statements if compiled with -DDEBUG
+- Added syslog if #define CURLWRAPPER_DEBUG
+### Changed
+ - Fixed logic error in notes_curl_perform where buffer_size was never reset if the 
+     notes_curl_handle was reused. Resulted in every call to notes_curl_perform to use 
+     additional memory equal to to the size of the response message;
+### Removed
+- Removed old debug print statements
+
 ## [0.1.5] - 2018-06-06
 ### Added
  - Added debug statements if compiled with -DDEBUG
