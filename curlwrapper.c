@@ -238,16 +238,24 @@ NotesCurlHandle create_notes_curl(CURL *curlhandle){
   */
 static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp){
 //    char * cp = (char *) contents; // Only for debugging
-  size_t realsize = size * nmemb;
-  struct NotesCurlHandlestruct *mem = (struct NotesCurlHandlestruct *)userp;
- 
-  //char * rb1 =mem->return_buffer; //debug
-  pthread_mutex_lock(&lock_callback);
+    pthread_mutex_lock(&lock_callback);
   #ifdef CURLWRAPPER_DEBUG
   syslog(LOG_DEBUG, "[WriteMemoryCallback] Mutex Lock callback");
 #endif
+  size_t realsize = size * nmemb;
+  struct NotesCurlHandlestruct *mem = (struct NotesCurlHandlestruct *)userp;
+  #ifdef CURLWRAPPER_DEBUG
+    syslog(LOG_DEBUG, "[>WriteMemoryCallback] Content =%p, size=%zu, nmemb=%zu, userp=%p", contents, size, nmemb, userp);
+#endif
+  //char * rb1 =mem->return_buffer; //debug
+  
   mem->return_buffer = my_realloc (mem->return_buffer,  mem->return_buffer_size+realsize + 1);
   //char * rb2 =mem->return_buffer; //debug
+  
+  #ifdef CURLWRAPPER_DEBUG
+  syslog(LOG_DEBUG, "[WriteMemoryCallback] New buffer=%p", mem->return_buffer);
+#endif
+  
   if(mem->return_buffer == NULL) { /* out of memory! */ 
 	syslog(LOG_ERR,"not enough memory (my_realloc returned NULL)");
 	pthread_mutex_unlock(&lock_callback);
@@ -259,18 +267,20 @@ static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, voi
   memcpy(&mem->return_buffer[mem->return_buffer_size], contents, realsize);
   mem->return_buffer_size += realsize;
   mem->return_buffer[mem->return_buffer_size] = 0; 
-  pthread_mutex_unlock(&lock_callback);
- #ifdef CURLWRAPPER_DEBUG
-  syslog(LOG_DEBUG, "[WriteMemoryCallback] Mutex Unlock callback");
-#endif 
+   
   
 
  // mem->return_buffer = &mem->return_buffer[mem->return_buffer_size];
   //printf("realsize=%zd\n",mem->return_buffer_size);
   //printf("Buffer=%s\n",mem->return_buffer);
-  #ifdef CURLWRAPPER_DEBUG
+pthread_mutex_unlock(&lock_callback);
+ #ifdef CURLWRAPPER_DEBUG
+  syslog(LOG_DEBUG, "[WriteMemoryCallback] Mutex Unlock callback");
+#endif  
+#ifdef CURLWRAPPER_DEBUG
   syslog(LOG_INFO,"[<WriteMemoryCallback] returning size=%zu",realsize);
 #endif
+  
   return realsize;
 }
 
@@ -387,7 +397,7 @@ void PrintChunk( struct NotesCurlHandlestruct *content){
  void *my_realloc( void *current, size_t size ) {
 	void *r_addr = NULL;
 #ifdef CURLWRAPPER_DEBUG
-	syslog(LOG_DEBUG,"[my_realloc] old pointer at %p, , size=%zu",current, size);
+	syslog(LOG_DEBUG,"[my_realloc] old pointer at %p, size=%zu",current, size);
 #endif
 	r_addr = realloc( current,  size );
 #ifdef CURLWRAPPER_DEBUG
