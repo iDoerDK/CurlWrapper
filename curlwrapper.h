@@ -16,9 +16,9 @@ extern "C" {
 #include <curl/curl.h>
 //#include "curlwrapper.h"
 
-#define CURLWRAPPER_VERSION "0.1.10"
+#define CURLWRAPPER_VERSION "0.1.10 debug"
 #define CURLWRAPPER_LOGLEVEL "debug" // not yet used
-//#define CURLWRAPPER_DEBUG 1
+#define CURLWRAPPER_DEBUG 1
     
 typedef unsigned long NotesCurlHandle ;
 pthread_mutex_t lock_my_malloc, lock_free, lock_callback;
