@@ -62,7 +62,7 @@ FFLAGS=
 ASFLAGS=
 
 # Link Libraries and Options
-LDLIBSOPTIONS=
+LDLIBSOPTIONS=-L/home/jarnt/NetBeansProjects/curllib3
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}
