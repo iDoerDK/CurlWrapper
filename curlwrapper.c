@@ -69,7 +69,6 @@ void PrintNotesCurlStruct (long max_entries, char * text){
         case -1:
             syslog(LOG_DEBUG,"%s NotesCurlStruct has been initialized with %ld entries",text,no_entries);    
             syslog(LOG_DEBUG, "%s NotesCurlHandles at %p",text,globalNotesCurlHandleList.NotesCurlHandles);
-
             break;
         default:
             syslog(LOG_DEBUG,"%s NotesCurlStruct last entry is %ld",text,no_entries);
