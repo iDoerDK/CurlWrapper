@@ -1,0 +1,6 @@
+#!/bin/bash
+
+binary_so=$1
+
+scp ${binary_so} ${SERVER_NAME}:${SERVER_DIR}/
+
