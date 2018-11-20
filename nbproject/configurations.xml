@@ -56,31 +56,7 @@
         <additionalOptions>Additional-options-here</additionalOptions>
         <packFileList>
           <packFileListElem type="File"
-                            to="${PACKAGE_TOP_DIR}lib/${OUTPUT_BASENAME}"
-                            from="${OUTPUT_PATH}"
-                            perm="644"
-                            owner="root"
-                            group="bin"/>
-          <packFileListElem type="File"
-                            to="${PACKAGE_TOP_DIR}lib/${OUTPUT_BASENAME}"
-                            from="${OUTPUT_PATH}"
-                            perm="644"
-                            owner="root"
-                            group="bin"/>
-          <packFileListElem type="File"
-                            to="${PACKAGE_TOP_DIR}lib/${OUTPUT_BASENAME}"
-                            from="${OUTPUT_PATH}"
-                            perm="644"
-                            owner="root"
-                            group="bin"/>
-          <packFileListElem type="File"
-                            to="${PACKAGE_TOP_DIR}lib/${OUTPUT_BASENAME}"
-                            from="${OUTPUT_PATH}"
-                            perm="644"
-                            owner="root"
-                            group="bin"/>
-          <packFileListElem type="File"
-                            to="${PACKAGE_TOP_DIR}lib/${OUTPUT_BASENAME}"
+                            to="${PACKAGE_TOP_DIR}local/lib/${OUTPUT_BASENAME}"
                             from="${OUTPUT_PATH}"
                             perm="644"
                             owner="root"
@@ -172,31 +148,7 @@
         <packType>Debian</packType>
         <packFileList>
           <packFileListElem type="File"
-                            to="${PACKAGE_TOP_DIR}lib/${OUTPUT_BASENAME}"
-                            from="${OUTPUT_PATH}"
-                            perm="644"
-                            owner="root"
-                            group="bin"/>
-          <packFileListElem type="File"
-                            to="${PACKAGE_TOP_DIR}lib/${OUTPUT_BASENAME}"
-                            from="${OUTPUT_PATH}"
-                            perm="644"
-                            owner="root"
-                            group="bin"/>
-          <packFileListElem type="File"
-                            to="${PACKAGE_TOP_DIR}lib/${OUTPUT_BASENAME}"
-                            from="${OUTPUT_PATH}"
-                            perm="644"
-                            owner="root"
-                            group="bin"/>
-          <packFileListElem type="File"
-                            to="${PACKAGE_TOP_DIR}lib/${OUTPUT_BASENAME}"
-                            from="${OUTPUT_PATH}"
-                            perm="644"
-                            owner="root"
-                            group="bin"/>
-          <packFileListElem type="File"
-                            to="${PACKAGE_TOP_DIR}lib/${OUTPUT_BASENAME}"
+                            to="${PACKAGE_TOP_DIR}local/lib/${OUTPUT_BASENAME}"
                             from="${OUTPUT_PATH}"
                             perm="644"
                             owner="root"
