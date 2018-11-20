@@ -29,6 +29,8 @@
 #include <syslog.h>
 #include "curlwrapper.h"
 
+#define NO_ENT 10
+
 struct NotesCurlHandlestruct {
     // In normal operation bot curlhand and return_buffer must have a valid addres or both have null,
     NotesCurlHandle notesCurlHandle; // just a copy of the index in the array so we know what 
@@ -40,13 +42,13 @@ struct NotesCurlHandlestruct {
 
 struct NotesCurlHandleListstruct {
     long number_of_entries; // size of the array - will be populated at init time. 
-    struct NotesCurlHandlestruct  NotesCurlHandles[10]; // 0 indexed so first entry is 0 (Actually should be NotesCurlHandles[] but due to flexible array member issues declared as "pure" pointers)
+    struct NotesCurlHandlestruct  NotesCurlHandles[NO_ENT]; // 0 indexed so first entry is 0 (Actually should be NotesCurlHandles[] but due to flexible array member issues declared as "pure" pointers)
 };
 
 struct NotesCurlHandleListstruct globalNotesCurlHandleList = 
 {
     //.number_of_entries= -1,
-    .number_of_entries=10
+    .number_of_entries=NO_ENT
    // .NotesCurlHandles = ((void *) 0)
 
 };
@@ -70,6 +72,7 @@ void PrintNotesCurlStruct (long max_entries, char * text){
         switch (no_entries)     
         {
         case -1:
+            // Never reach this ????
             syslog(LOG_DEBUG,"%s NotesCurlStruct has been initialized with %ld entries",text,no_entries);    
             syslog(LOG_DEBUG, "%s NotesCurlHandles at %p",text,globalNotesCurlHandleList.NotesCurlHandles);
             break;
@@ -94,8 +97,7 @@ void PrintNotesCurlStruct (long max_entries, char * text){
 unsigned char isNotesCurlHandleValid (NotesCurlHandle handle){
     /* The handle is valid if all of the below are true:
         1) the handle is >= 0 (default is -1)
-        2) The handle is lower than or equal to index_last_entry
-        3) The handle points to a structure that is active
+        2) The handle points to a structure that is active
     */
     return (  handle >=0 
                 && (handle < globalNotesCurlHandleList.number_of_entries) 
@@ -116,12 +118,12 @@ unsigned char isNotesCurlHandleValid (NotesCurlHandle handle){
 	// Cleanup/free any return_buffer allocations
         if(globalNotesCurlHandleList.NotesCurlHandles[notesHandle].return_buffer != NULL) {
             my_free(globalNotesCurlHandleList.NotesCurlHandles[notesHandle].return_buffer);
-            //globalNotesCurlHandleList.NotesCurlHandles[notesHandle].return_buffer=NULL;
+            globalNotesCurlHandleList.NotesCurlHandles[notesHandle].return_buffer=NULL;
         }
 	// Deregister any active Curl handles.
         if(globalNotesCurlHandleList.NotesCurlHandles[notesHandle].curlhandle != NULL){
             curl_easy_cleanup(globalNotesCurlHandleList.NotesCurlHandles[notesHandle].curlhandle);
-           // globalNotesCurlHandleList.NotesCurlHandles[notesHandle].curlhandle =NULL;
+           globalNotesCurlHandleList.NotesCurlHandles[notesHandle].curlhandle =NULL;
         }
 	
         globalNotesCurlHandleList.NotesCurlHandles[notesHandle].active = 0;
@@ -133,6 +135,10 @@ unsigned char isNotesCurlHandleValid (NotesCurlHandle handle){
 }
  void notes_curl_global_cleanup() {
      unsigned long i=0;
+     
+      #ifdef CURLWRAPPER_DEBUG
+          syslog(LOG_NOTICE, ">notes_curl_global_cleanup");
+#endif
      for (i=0;i<globalNotesCurlHandleList.number_of_entries; i++)
      {
          notes_curl_easy_cleanup(i);
@@ -146,9 +152,8 @@ unsigned char isNotesCurlHandleValid (NotesCurlHandle handle){
      }
       */
      #ifdef CURLWRAPPER_DEBUG
-          syslog(LOG_NOTICE, "CurlWrapper de-instantiated");
-           PrintNotesCurlStruct(10, "[<notes_curl_global_cleanup]");
-#endif
+          syslog(LOG_NOTICE, "<notes_curl_global_cleanup");
+     #endif
            
           closelog();
  }
@@ -165,7 +170,7 @@ NotesCurlHandle create_notes_curl(CURL *curlhandle){
     if (localHandles != NULL) {
         //printf("ENTERING create_notes_curl\n\n"); 
         for ( long i=0; i<globalNotesCurlHandleList.number_of_entries && available_entry<0;i++) {
-            if(! localHandles[i].active) {
+            if(localHandles[i].active == 0) {
                 available_entry=i;
             }
          }
@@ -191,7 +196,7 @@ NotesCurlHandle create_notes_curl(CURL *curlhandle){
 }
  extern NotesCurlHandle  notes_curl_easy_init()  {
      // Consider providing the number of concurrent slots to make it available at init time
-     unsigned int NumberOfNotesCurlHandles = 10;
+     // unsigned int NumberOfNotesCurlHandles = NO_ENT;
      NotesCurlHandle rc_handle = -1;
      CURLcode rccode = -1;
      CURL *localCURLhandle = NULL;
@@ -222,8 +227,8 @@ NotesCurlHandle create_notes_curl(CURL *curlhandle){
      */
      
      if (globalNotesCurlHandleList.NotesCurlHandles != NULL ){
-         globalNotesCurlHandleList.number_of_entries = NumberOfNotesCurlHandles;
-        for(unsigned long i=0; i<NumberOfNotesCurlHandles;i++) {
+         //globalNotesCurlHandleList.number_of_entries = NumberOfNotesCurlHandles;
+        for(unsigned long i=0; i<NO_ENT;i++) {
             #ifdef CURLWRAPPER_DEBUG
                 syslog(LOG_ERR,"[notes_curl_easy_init] init=%li",i);
             #endif

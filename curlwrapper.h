@@ -15,7 +15,7 @@ extern "C" {
 
 #include <curl/curl.h>
 
-#define CURLWRAPPER_VERSION "0.1.14 debug"
+#define CURLWRAPPER_VERSION "0.1.15 debug"
 #define CURLWRAPPER_LOGLEVEL "debug" // not yet used
 #define CURLWRAPPER_DEBUG 1
     
