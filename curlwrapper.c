@@ -31,21 +31,24 @@
 
 struct NotesCurlHandlestruct {
     // In normal operation bot curlhand and return_buffer must have a valid addres or both have null,
-    NotesCurlHandle notesCurlHandle; // just a copy of the indes in the array so we know what 
+    NotesCurlHandle notesCurlHandle; // just a copy of the index in the array so we know what 
     CURL *curlhandle;  // null if not init'ed 
     char * return_buffer; // null if not allocated
     size_t return_buffer_size;
-    unsigned int active; // 0 for inactive, 1 for active, both curlhandle and return buffer must have a valid address if active == 1
+    unsigned int active ; // 0 for inactive, 1 for active, both curlhandle and return buffer must have a valid address if active == 1
 } ;
+
 struct NotesCurlHandleListstruct {
     long number_of_entries; // size of the array - will be populated at init time. 
-    struct NotesCurlHandlestruct  *NotesCurlHandles; // 0 indexed so first entry is 0 (Actually should be NotesCurlHandles[] but due to flexible array member issues declared as "pure" pointers)
+    struct NotesCurlHandlestruct  NotesCurlHandles[10]; // 0 indexed so first entry is 0 (Actually should be NotesCurlHandles[] but due to flexible array member issues declared as "pure" pointers)
 };
 
 struct NotesCurlHandleListstruct globalNotesCurlHandleList = 
 {
-    .number_of_entries= -1,
-    .NotesCurlHandles = ((void *) 0)
+    //.number_of_entries= -1,
+    .number_of_entries=10
+   // .NotesCurlHandles = ((void *) 0)
+
 };
 
 char * get_curlwrapper_version(){
@@ -127,8 +130,6 @@ unsigned char isNotesCurlHandleValid (NotesCurlHandle handle){
         syslog(LOG_DEBUG, "[notes_curl_easy_cleanup] Mutex Unlock lock_free");
 #endif
     }
-    
-    
 }
  void notes_curl_global_cleanup() {
      unsigned long i=0;
@@ -136,12 +137,14 @@ unsigned char isNotesCurlHandleValid (NotesCurlHandle handle){
      {
          notes_curl_easy_cleanup(i);
      }
+     /*
      if(globalNotesCurlHandleList.NotesCurlHandles != NULL) 
      {
          my_free(globalNotesCurlHandleList.NotesCurlHandles);
          globalNotesCurlHandleList.NotesCurlHandles = NULL;
          globalNotesCurlHandleList.number_of_entries = -1;
      }
+      */
      #ifdef CURLWRAPPER_DEBUG
           syslog(LOG_NOTICE, "CurlWrapper de-instantiated");
            PrintNotesCurlStruct(10, "[<notes_curl_global_cleanup]");
@@ -159,9 +162,6 @@ NotesCurlHandle create_notes_curl(CURL *curlhandle){
    #ifdef CURLWRAPPER_DEBUG
    syslog(LOG_DEBUG, "[create_notes_curl] Mutex Lock my_malloc");
 #endif
-   
-  
-       
     if (localHandles != NULL) {
         //printf("ENTERING create_notes_curl\n\n"); 
         for ( long i=0; i<globalNotesCurlHandleList.number_of_entries && available_entry<0;i++) {
@@ -191,7 +191,7 @@ NotesCurlHandle create_notes_curl(CURL *curlhandle){
 }
  extern NotesCurlHandle  notes_curl_easy_init()  {
      // Consider providing the number of concurrent slots to make it available at init time
-     unsigned int NumberOfNotesCurlHandles = 100;
+     unsigned int NumberOfNotesCurlHandles = 10;
      NotesCurlHandle rc_handle = -1;
      CURLcode rccode = -1;
      CURL *localCURLhandle = NULL;
@@ -213,12 +213,13 @@ NotesCurlHandle create_notes_curl(CURL *curlhandle){
             return 0;
         }
      #ifdef CURLWRAPPER_DEBUG
-     PrintNotesCurlStruct(2, "[>notes_curl_easy_init]");
+     PrintNotesCurlStruct(10, "[>notes_curl_easy_init]");
 #endif
-     
+     /*
        if(globalNotesCurlHandleList.NotesCurlHandles == NULL) {
             globalNotesCurlHandleList.NotesCurlHandles = my_malloc( sizeof(struct NotesCurlHandlestruct)*NumberOfNotesCurlHandles);
       }
+     */
      
      if (globalNotesCurlHandleList.NotesCurlHandles != NULL ){
          globalNotesCurlHandleList.number_of_entries = NumberOfNotesCurlHandles;
