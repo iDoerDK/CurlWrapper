@@ -8,7 +8,7 @@ CURL Wrapper
 
 Attribution and motivation
 
-This code has been procured and co-sponsored by Semaphor (www.semaphor.dk). Original motivation was to enable the use of the CURL api from IBM Lotus Domino (Lotus script)  on Linux
+This code has been procured and co-sponsored by Semaphor (www.semaphor.dk). Original motivation was to enable the use of the CURL api from IBM Lotus Domino (Lotus script)  on 64 bit Linux
 
 High level description
 
