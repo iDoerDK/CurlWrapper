@@ -394,7 +394,7 @@ extern long notes_easy_curl_getinfo_long(NotesCurlHandle notes_curl_handle, long
     globalNotesCurlHandleList.NotesCurlHandles[notes_curl_handle].last_curl_rc = curl_rc;
 #ifdef CURLWRAPPER_DEBUG
     syslog(LOG_NOTICE, "(%ld)[notes_easy_curl_getinfo_long] curl_rc=%u", time1, curl_rc);
-    syslog(LOG_NOTICE, "(%ld)[notes_easy_curl_getinfo_long] rc=%u", time1, rc);
+    syslog(LOG_NOTICE, "(%ld)[notes_easy_curl_getinfo_long] rc=%lu", time1, rc);
     syslog(LOG_NOTICE, "(%ld)[<notes_easy_curl_getinfo_long]",time1);
 #endif
      return rc ;
