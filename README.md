@@ -19,6 +19,7 @@ This library hides the callback elements of using curl_easy_perform from the cal
 You will most likely use this code if the following is true
 * You do not need/want to deal with the callback elements of the CURL API
 * You do not want to deal with memory allocation and buffer management for the CURL API (curl_easy_* functions)
+* You do not need/want to deal with passing pointers to arguments (ie. notes_curl_getinfo) 
 * You just want the html response from curl_easy_perfom as a string (char *)
 
 Function description
