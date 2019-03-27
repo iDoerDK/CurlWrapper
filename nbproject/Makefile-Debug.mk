@@ -49,7 +49,7 @@ TESTOBJECTFILES= \
 	${TESTDIR}/tests/newsimpletest.o
 
 # C Compiler Flags
-CFLAGS=-g
+CFLAGS=-g -DDEBUG
 
 # CC Compiler Flags
 CCFLAGS=

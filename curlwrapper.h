@@ -15,12 +15,15 @@ extern "C" {
 
 #include <curl/curl.h>
 
-#define CURLWRAPPER_VERSION "0.1.15 debug"
-#define CURLWRAPPER_LOGLEVEL "debug" // not yet used
-#define CURLWRAPPER_DEBUG 1
+#define CURLWRAPPER_VERSION "0.1.19"
+
+#ifdef DEBUG
+    #define CURLWRAPPER_DEBUG 1
+    #define CURLWRAPPER_LOGLEVEL "debug" // not yet used
+#endif
     
 typedef long NotesCurlHandle ;
-pthread_mutex_t lock_my_malloc, lock_free, lock_callback;
+pthread_mutex_t lock_my_malloc, lock_free, lock_callback, curl_init;
 
 /** NotesCurlVersion
     * .
@@ -40,6 +43,10 @@ char * get_curlwrapper_version ();
     * @return char pointer to the returned string (raw)
     */
 extern char * notes_easy_curl_perform(NotesCurlHandle notes_curl_handle); 
+extern long notes_easy_curl_getinfo_long(NotesCurlHandle notes_curl_handle, long info); 
+extern char * notes_easy_curl_getinfo_char(NotesCurlHandle notes_curl_handle, long info ); 
+extern CURLcode notes_easy_curl_getlast_curle(NotesCurlHandle notes_curl_handle);
+
 extern void notes_curl_global_cleanup();
 extern NotesCurlHandle  notes_curl_easy_init() ;
 extern void notes_curl_easy_cleanup(NotesCurlHandle notesHandle);

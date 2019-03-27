@@ -34,10 +34,11 @@
 
 struct NotesCurlHandlestruct {
     // In normal operation bot curlhand and return_buffer must have a valid addres or both have null,
-    NotesCurlHandle notesCurlHandle; // just a copy of the index in the array so we know what 
+    NotesCurlHandle notesCurlHandle; // just a copy of the index in the array so we know what it is
     CURL *curlhandle;  // null if not init'ed 
     char * return_buffer; // null if not allocated
     size_t return_buffer_size;
+    CURLcode last_curl_rc;
     unsigned int active ; // 0 for inactive, 1 for active, both curlhandle and return buffer must have a valid address if active == 1
 } ;
 
@@ -56,7 +57,7 @@ struct NotesCurlHandleListstruct globalNotesCurlHandleList =
 long time1=0;
 char * get_curlwrapper_version(){
 #ifdef DEBUG
-    char * notescurlversion =   CURLWRAPPER_VERSION;
+    char * notescurlversion =   CURLWRAPPER_VERSION   " debug";
 #else
      char * notescurlversion =  CURLWRAPPER_VERSION;
 #endif
@@ -85,7 +86,7 @@ void PrintNotesCurlStruct (long max_entries, char * text){
             for( int i = 0; i<max_entries;i++)
             {
                 if (globalNotesCurlHandleList.NotesCurlHandles[i].active) {
-                    syslog(LOG_DEBUG,"(%ld)%s    %i, Active=%i, CURLpointer at %p, Returnbuffer at %p, size=%zu",time1,text,i,globalNotesCurlHandleList.NotesCurlHandles[i].active, globalNotesCurlHandleList.NotesCurlHandles[i].curlhandle, globalNotesCurlHandleList.NotesCurlHandles[i].return_buffer,globalNotesCurlHandleList.NotesCurlHandles[i].return_buffer_size);
+                    syslog(LOG_DEBUG,"(%ld)%s    %i, Active=%i, CURLpointer at %p, Returnbuffer at %p, size=%zu, curle=%i",time1,text,i,globalNotesCurlHandleList.NotesCurlHandles[i].active, globalNotesCurlHandleList.NotesCurlHandles[i].curlhandle, globalNotesCurlHandleList.NotesCurlHandles[i].return_buffer,globalNotesCurlHandleList.NotesCurlHandles[i].return_buffer_size,globalNotesCurlHandleList.NotesCurlHandles[i].last_curl_rc);
                 }
             }
             break;
@@ -144,7 +145,7 @@ unsigned char isNotesCurlHandleValid (NotesCurlHandle handle){
      unsigned long i=0;
      
       #ifdef CURLWRAPPER_DEBUG
-          syslog(LOG_NOTICE, "(%ld)>notes_curl_global_cleanup - Depreciated - clanup our own handle",time1);
+          syslog(LOG_NOTICE, "(%ld)>notes_curl_global_cleanup - Depreciated - cleanup our own individual handles",time1);
           
 
     #endif
@@ -225,9 +226,7 @@ NotesCurlHandle create_notes_curl(CURL *curlhandle){
             return 0;
         }
        
-
        if (pthread_mutex_init(&lock_my_malloc, NULL) != 0) {
-          
             syslog(LOG_ERR,"(%ld)[notes_curl_easy_init] mutex init lock_my_malloc failed",time1);
             return 0;
         }
@@ -268,7 +267,10 @@ NotesCurlHandle create_notes_curl(CURL *curlhandle){
         
         if (localCURLhandle) 
         {
-             syslog(LOG_ERR,"(%ld)[notes_curl_easy_init] curl_easy_init returned handle=%p",time1,localCURLhandle);
+             #ifdef CURLWRAPPER_DEBUG
+        syslog(LOG_ERR,"(%ld)[notes_curl_easy_init] curl_easy_init returned handle=%p",time1,localCURLhandle);
+        #endif
+             
              rc_handle = create_notes_curl( localCURLhandle);    
         }
        
@@ -350,17 +352,76 @@ void PrintChunk( struct NotesCurlHandlestruct *content){  // Obs not used - only
     }
     printf("\n");
 }
- 
+
+extern char * notes_easy_curl_getinfo_char(NotesCurlHandle notes_curl_handle, long info){
+    CURL *ch;
+    char * rc_buffer = NULL;
+    CURLcode curl_rc=-1;
+	#ifdef CURLWRAPPER_DEBUG
+		syslog(LOG_NOTICE, "(%ld)[>notes_easy_curl_getinfo_char]",time1);
+	#endif	
+    ch =notes_get_native_curl_handle(notes_curl_handle);
+    if (ch != NULL) {
+	curl_rc = curl_easy_getinfo(ch, info, &rc_buffer);	
+	if (curl_rc != CURLE_OK) { // rc is only valid if CURL errorcode is CURLE_OK
+		rc_buffer = NULL; 
+	}	
+    }
+    globalNotesCurlHandleList.NotesCurlHandles[notes_curl_handle].last_curl_rc = curl_rc;
+         
+#ifdef CURLWRAPPER_DEBUG
+    syslog(LOG_NOTICE, "(%ld)[notes_easy_curl_getinfo_char] curl_rc=%u", time1, curl_rc);
+    syslog(LOG_NOTICE, "(%ld)[notes_easy_curl_getinfo_char] rc_buffer=%p", time1, rc_buffer);
+     syslog(LOG_NOTICE, "(%ld)[<notes_easy_curl_getinfo_char]",time1);
+#endif
+     return rc_buffer;
+ }
+
+extern long notes_easy_curl_getinfo_long(NotesCurlHandle notes_curl_handle, long info){
+    CURL *ch;
+    long rc = 0;
+    CURLcode curl_rc = -1;
+    #ifdef CURLWRAPPER_DEBUG
+	syslog(LOG_NOTICE, "(%ld)[>notes_easy_curl_getinfo_long]",time1);
+    #endif
+    ch =notes_get_native_curl_handle(notes_curl_handle);
+    if (ch != NULL) {
+	curl_rc = curl_easy_getinfo(ch, info, &rc);
+	if (curl_rc != CURLE_OK) { // rc is only valid if CURL errorcode is CURLE_OK
+		rc = 0; 
+	} 	
+    }
+    globalNotesCurlHandleList.NotesCurlHandles[notes_curl_handle].last_curl_rc = curl_rc;
+#ifdef CURLWRAPPER_DEBUG
+    syslog(LOG_NOTICE, "(%ld)[notes_easy_curl_getinfo_long] curl_rc=%u", time1, curl_rc);
+    syslog(LOG_NOTICE, "(%ld)[notes_easy_curl_getinfo_long] rc=%u", time1, rc);
+    syslog(LOG_NOTICE, "(%ld)[<notes_easy_curl_getinfo_long]",time1);
+#endif
+     return rc ;
+ }
+extern CURLcode notes_easy_curl_getlast_curle(NotesCurlHandle notes_curl_handle){
+    CURLcode rc = -1;
+    #ifdef CURLWRAPPER_DEBUG
+	syslog(LOG_NOTICE, "(%ld)[>notes_easy_curl_getlast_curle]",time1);
+    #endif
+
+	if (isNotesCurlHandleValid(notes_curl_handle)) {
+		  rc =  globalNotesCurlHandleList.NotesCurlHandles[notes_curl_handle].last_curl_rc;
+	}
+    
+    #ifdef CURLWRAPPER_DEBUG
+    syslog(LOG_NOTICE, "(%ld)[<notes_easy_curl_getlast_curle]",time1);
+    #endif
+
+	return rc;
+}
+
  extern char * notes_easy_curl_perform(NotesCurlHandle notes_curl_handle){
      char * rc_buffer = NULL;
-     CURLcode curl_error;
+     CURLcode curl_error = -1;
 #ifdef CURLWRAPPER_DEBUG
       syslog(LOG_NOTICE, "(%ld)[>notes_easy_curl_perform]",time1);
 #endif
-     //PrintNotesCurlStruct("easy_perform");
-     
-      //curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);/* send all data to this function  */ 
-      // curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void *)&chunk);/* we pass our 'chunk' struct to the callback function */ 
      if (isNotesCurlHandleValid(notes_curl_handle))
      { 
          if(globalNotesCurlHandleList.NotesCurlHandles[notes_curl_handle].return_buffer == NULL)
@@ -384,16 +445,21 @@ void PrintChunk( struct NotesCurlHandlestruct *content){  // Obs not used - only
         if(url)
             syslog(LOG_DEBUG,"(%ld)[notes_easy_curl_perform] URL=%s", time1,url); 
 #endif
-      syslog(LOG_NOTICE, "(%ld)[notes_easy_curl_perform] Calling curl_easy_perform BEGIN",time1);
-        curl_error = curl_easy_perform(globalNotesCurlHandleList.NotesCurlHandles[notes_curl_handle].curlhandle);
-      syslog(LOG_NOTICE, "(%ld)[notes_easy_curl_perform] Calling curl_easy_perform END, curl_error=%u",time1,curl_error);
+        #ifdef CURLWRAPPER_DEBUG
+            syslog(LOG_NOTICE, "(%ld)[notes_easy_curl_perform] Calling curl_easy_perform BEGIN",time1);
 
+        #endif
+        curl_error = curl_easy_perform(globalNotesCurlHandleList.NotesCurlHandles[notes_curl_handle].curlhandle);
+        #ifdef CURLWRAPPER_DEBUG
+            syslog(LOG_NOTICE, "(%ld)[notes_easy_curl_perform] Calling curl_easy_perform END, curl_error=%u",time1,curl_error);
+        #endif	
        //curl_error = CURLE_OK;
         if (curl_error == CURLE_OK) 
         {
             rc_buffer = globalNotesCurlHandleList.NotesCurlHandles[notes_curl_handle].return_buffer;
         }
      }
+     globalNotesCurlHandleList.NotesCurlHandles[notes_curl_handle].last_curl_rc = curl_error;
      //printf("rc_buffer:%s\n",rc_buffer);
  #ifdef CURLWRAPPER_DEBUG
      PrintNotesCurlStruct(NO_ENT,"[notes_easy_curl_perform] Print3");
